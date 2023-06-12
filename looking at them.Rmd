@@ -1,0 +1,475 @@
+---
+title: "Looking at data"
+output: html_notebook
+---
+
+I'm looking at games sales data - This is hopefully going to look like a combination of total sales stats, trends by genre (if there is that much detail), reviews(?)
+
+Haven't fully decided on the question I want to tackle, but I think I'm approaching the scenario in a similar way to the brief
+
+"Small games company want to understand what types of games sell a lot of copies. In particular they are looking for analysis that helps them decide which direction to take their company in."
+
+I'm not very happy with the dataset, as the landscape in 2019/16 was vastly different to 2023. 
+
+
+## Issues i'm expecting 
+
+- Games as a service as a model still isn't dead, so the traditional method of looking at Sales to judge success might not be enough
+
+- Subscription services - chiefly Game Pass, but nowadays you don't really need to buy a game you're interested in - Similar model to netflix
+
+- DLC and post-launch content - You aren't finished buying a game when you pay for it at launch. Paid content is drip fed for up to several years after a games launch
+
+- Missing sales numbers - As far as I'm aware, a developer/publisher doesn't have to release sales numbers.
+
+- Missing titles - It might be hard to believe, but there are many more games out there than FIFA, Skyrim and Mario Kart. Smaller or more niche titles may not be represented __even if they are a better model for a smaller company to emulate__
+
+- __Steam alone contains over 50 thousand games__ (granted, of extremely varying quality)
+
+- Measures of success - It simply isn't fair to judge success between some titles. Comparing Lethal League Blaze to Super Smash Brothers Ultimate is not
+a level playing field.
+
+## Assumptions
+
+Before I even look at the data, I'm expecting some bias - Newer consoles might not be represented in data, which might "suggest" that it's better to develop a title for an older system, as they have "more success".
+
+Some titles will blow others out the water in terms of sales, simply due to them being multi-platform.
+For example, a successful PS4 exclusive title will likely not sell as many copies as a successful multi-platform title
+
+One of the biggest influences on sales will be Title/Franchise - If a game is called "Pokemon", chances are it'll do well. This is not something that a small company will be able to
+emulate, unless they are looking to get sued.
+
+# __VAMPIRE SURVIVORS DEFIES ALL LOGIC AND PREDICTIONS - PERHAPS MANKIND WASNT MEANT TO KNOW WHAT GAMES WILL TAKE OFF__
+
+Currently i have a few datasets that might be useful for supplementing the 2019 data from one of the example briefs
+
+Hypothesis test - Franchise v non-Franchise
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(ggwordcloud)
+library(janitor)
+
+steam <- read_csv("raw_data/steam.csv") # absolutely massive
+games_1 <- read_csv("raw_data/Video_Games.csv")
+games_2 <- read_csv("raw_data/Video_Games_Sales.csv")
+games_raw <- read_csv("raw_data/Raw Data GVGS&R.csv")
+games_cleaned <- read_csv("raw_data/Cleaned Data 2 GVGS&R.csv")
+```
+```{r}
+games_raw %>% 
+  arrange(Name) %>% 
+  drop_na(Global_Sales) # No NA's in global sales - good start
+```
+
+```{r}
+
+
+```
+
+```{r}
+steam_tags <- steam %>% 
+  select(steamspy_tags) %>% 
+  separate(col = steamspy_tags, sep = ";", into = c("tags", "tags_2", "tags_3")) %>% 
+  pivot_longer(col = starts_with("tags"), values_to = "all_tags") %>% 
+  select(all_tags) %>% 
+  drop_na() %>% 
+  count(all_tags)
+
+
+ggwordcloud(words = steam_tags$all_tags, freq = steam_tags$n, random.color = TRUE, colors =  c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"))
+
+```
+
+```{r}
+
+```
+
+
+```{r}
+steam %>% 
+  arrange(desc(name))
+```
+
+```{r}
+games_backloggd <- read_csv("raw_data/games backloggd.csv")
+```
+
+## Cleaning Backloggd data
+
+```{r}
+games_backloggd <- games_backloggd %>% 
+  clean_names()
+
+# dropping unreleased games for now - only 3 of them, so won't impact anything too much
+# converting release_date into a date and adding a years since release column - This could be usable to discount certain titles from a model
+# e.g if there WAS a trend in games 10~ years ago, it may not be applicable today, and might produce incorrect guidance
+# splitting genres into separate columns : only one game has 7 genre tags. 
+games_backloggd <- games_backloggd %>% 
+  arrange(desc(rating)) %>% 
+  filter(release_date != "releases on TBD") %>% 
+  mutate(release_date = mdy(release_date),
+         time_since_release = as.period(today() - release_date),
+         years_since_release = as.numeric(time_since_release, "years"), .after = release_date) %>% 
+  mutate(years_since_release = round(years_since_release, digits = 2)) %>% 
+  select(!time_since_release) %>% 
+  separate(col = genres, sep = "', '", into = c("genre_tag", "genre_tag_2", "genre_tag_3", "genre_tag_4", "genre_tag_5", "genre_tag_6", "genre_tag_7"))
+
+# removing the opening and closing brackets and apostrophes across the genre columns
+games_backloggd <- games_backloggd %>% 
+  mutate(genre_tag = str_replace_all(genre_tag, pattern = "\\['", replacement = ""),
+         across(starts_with("genre_tag"), ~ str_replace_all(., pattern = "'\\]", replacement = ""))) 
+
+games_backloggd
+
+```
+```{r}
+# Converted the below code into a function so i can reuse it
+character_k_to_numeric <- function(x) {
+  x = enquo(x)
+  
+  games_backloggd %>% 
+     mutate(multiplier = case_when(
+    str_detect(!!x, pattern = "K$") ~ TRUE,
+    TRUE ~ FALSE)) %>% 
+  mutate(!!x := str_remove(string = !!x, pattern = "K$")) %>% 
+  mutate(!!x := as.numeric(!!x)) %>% 
+  mutate(!!x := case_when(
+    multiplier == TRUE ~ !!x*1000,
+    TRUE ~ !!x
+  )) %>% 
+  select(!multiplier)
+}
+
+# converts these columns into numerics
+
+games_backloggd <- character_k_to_numeric(x = number_of_reviews)
+
+games_backloggd <- character_k_to_numeric(x = plays)
+
+games_backloggd <- character_k_to_numeric(x = wishlist)
+```
+
+```{r}
+games_backloggd <- games_backloggd %>% 
+  select(!plays, !backlogs, !times_listed)
+```
+
+chunk below is original attempts at converting the above columns
+```{r}
+
+# games_backloggd <- games_backloggd %>% 
+#   select(!times_listed)
+
+# mutating number of reviews to be numeric
+# In this horrible step, I'm using str_detect and case_when to create a column called multiplier - this will be used later
+# then i drop the "K"'s, and convert the column to a numeric
+# then multiply the columns values by 1000 IF the multiplier column is TRUE
+# games_backloggd %>%
+#   mutate(multiplier = case_when(
+#     str_detect(number_of_reviews, pattern = "K$") ~ TRUE,
+#     TRUE ~ FALSE
+#   ),.after = number_of_reviews) %>%
+#   mutate(number_of_reviews = str_remove(number_of_reviews, pattern = "K$")) %>%
+#   mutate(number_of_reviews = as.numeric(number_of_reviews)) %>%
+#   mutate(number_of_reviews = case_when(
+#     multiplier == TRUE ~ number_of_reviews*1000,
+#     TRUE ~ number_of_reviews
+#   )) %>%
+#   select(!multiplier)
+# 
+# # Oh No i need to do this to more columns
+# 
+# games_backloggd %>% 
+#    mutate(multiplier = case_when(
+#     str_detect(plays, pattern = "K$") ~ TRUE,
+#     TRUE ~ FALSE
+#   ),.after = plays) %>% 
+#   mutate(plays = str_remove(plays, pattern = "K$")) %>% 
+#   mutate(plays = as.numeric(plays)) %>% 
+#   mutate(plays = case_when(
+#     multiplier == TRUE ~ plays*1000,
+#     TRUE ~ plays
+#   )) %>% 
+#   select(!multiplier)
+
+# making it a function because that's easier
+# character_k_to_numeric <- function(dataframe, column) {
+#      mutate(multiplier = case_when(
+#     str_detect(column, pattern = "K$") ~ TRUE,
+#     TRUE ~ FALSE
+#   ),.after = column) %>% 
+#   mutate(column = str_remove(column, pattern = "K$")) %>% 
+#   mutate(column = as.numeric(column)) %>% 
+#   mutate(column = case_when(
+#     multiplier == TRUE ~ column*1000,
+#     TRUE ~ column
+#   )) %>% 
+#   select(!multiplier)
+# }
+
+```
+
+
+```{r}
+# tidying up team column
+games_backloggd <- games_backloggd %>% 
+  mutate(team = str_replace_all(team, pattern = "\\['", replacement = ""),
+         team = str_replace_all(team, pattern = "'\\]", replacement = ""),
+         team = str_replace_all(team, pattern = "\\', \\'", replacement = ", ")) 
+```
+
+```{r}
+# keeping these separate incase i need them
+reviews_backloggd <- games_backloggd %>% 
+  select(title, summary, reviews) 
+```
+
+```{r}
+# cutting these columns for now - if needed, i'll reattach them
+games_backloggd <- games_backloggd %>% 
+  select(!x1)
+```
+
+```{r}
+games_backloggd <- games_backloggd %>% 
+  select(-summary, -times_listed, -reviews, -playing, -backlogs) 
+```
+
+```{r}
+# removing duplicated rows
+
+games_backloggd <- games_backloggd %>% 
+  unique()
+```
+
+## Happy with games_backlogged just now
+
+```{r}
+games_backloggd_clean <- games_backloggd
+write_csv(games_backloggd_clean, "clean_data/backloggd_clean.csv")
+```
+
+## Looking at top games data
+
+```{r}
+games_1 
+```
+
+```{r}
+games_2
+```
+These seem to be the same thing
+
+going with games_1 and renaming it something more sensible
+
+```{r}
+games_sales <- games_1
+```
+
+```{r}
+games_sales <- games_sales %>% 
+  clean_names() 
+```
+
+```{r}
+games_sales %>% 
+  filter(name == "Minecraft") %>% 
+  count(sum(global_sales))
+```
+
+```{r}
+games_sales %>% 
+  group_by(name) %>% 
+  
+```
+# might have to faff around to get an accurate picture of sales for this one
+
+```{r}
+vg_chartz_feb23 <- read_csv("raw_data/game_statistics_feb_2023.csv")
+```
+
+```{r}
+vg_chartz_feb23
+```
+```{r}
+# dont really need to know where these games fall on the charts for this site - note: pos means position. Not anything else.
+vg_chartz_feb23 <- vg_chartz_feb23 %>% 
+  select(-pos)
+```
+
+Platform is a little unhelpful. "All" does not mean all platforms (unless Elden Ring released on Switch, or the NES)
+"Series" might be useful as a look-up for another table though
+
+```{r}
+list_of_franchises <- vg_chartz_feb23 %>% 
+  filter(platform == "Series") %>% 
+  select(title, publisher, developer)
+```
+
+```{r}
+write_csv(list_of_franchises, "clean_data/list_of_franchises.csv")
+```
+
+# Thats all i want from this one i think. Might come back to it
+
+# Back to Steam
+
+```{r}
+steam
+```
+
+```{r}
+# i don't know much about titles that aren't in english - are all the ones in this dataset english?
+
+steam <- steam %>% 
+  filter(english == 1) %>% 
+  select(!english)
+
+# approx 1000 aren't - but who are they?
+
+steam %>% 
+  filter(english == 0) %>% 
+  filter(owners != "0-20000")
+
+# Majority seem to be chinese/japanese/russian in origin. Probably not really in the scope of a dundee based company
+# This mainly suggests that these are titles that don't have support for  multiple languages
+# Also don't seem to have a lot of sales. Can probably justify just dropping these for the time being.
+```
+
+# HYPOTHESIS TEST: IN STEAM DATA, DOES HAVING SUPPORT FOR MULTIPLE LANGUAGES AFFECT SALES? DUNNO MATE BUT I CAN CHECK I GUESS
+
+```{r}
+# make platforms wider - windows_support = TRUE/FALSE, mac_support = TRUE/FALSE, linux_support = TRUE/FALSE
+steam <- steam %>% 
+   separate(col = platforms, sep = ";", into = c("platform_1", "platform_2", "platform_3")) 
+```
+```{r}
+# this is verbose and clunky, but it catches everything so whatever
+steam <- steam %>% 
+  mutate(windows_support = case_when(
+    platform_1 == "windows" ~ TRUE,
+    platform_2 == "windows" ~ TRUE,
+    platform_3 == "windows" ~ TRUE,
+    TRUE ~ FALSE ),.after = publisher) %>% 
+  mutate(mac_support = case_when(
+    platform_1 == "mac" ~ TRUE,
+    platform_2 == "mac" ~ TRUE,
+    platform_3 == "mac" ~ TRUE,
+    TRUE ~ FALSE), .after = windows_support) %>% 
+ mutate(linux_support = case_when(
+    platform_1 == "linux" ~ TRUE,
+    platform_2 == "linux" ~ TRUE,
+    platform_3 == "linux" ~ TRUE,
+    TRUE ~ FALSE), .after = mac_support) %>% 
+  select(-platform_1, -platform_2, -platform_3)
+```
+
+```{r}
+# change owners to be more readable
+steam <- steam %>% 
+  mutate(owners = case_when(
+    owners == "0-20000" ~ "below 20k",
+    owners == "20000-50000" ~ "20k to 50k",
+    owners == "50000-100000" ~ "50k to 100k",
+    owners == "100000-200000" ~ "100k to 200k",
+    owners == "200000-500000" ~ "200k to 500k",
+    owners == "500000-1000000" ~ "500k to 1M",
+    owners == "1000000-2000000" ~ "1M to 2M",
+    owners == "2000000-5000000" ~ "2M to 5M",
+    owners == "5000000-10000000" ~ "5M to 10M",
+    owners == "10000000-20000000" ~ "10M to 20M",
+    owners == "20000000-50000000" ~ "20M to 50M",
+    owners == "50000000-100000000" ~ "50M to 100M",
+    owners == "100000000-200000000" ~ "100M to 200M"
+  )) 
+
+  
+
+```
+
+```{r}
+steam %>% 
+  filter(owners == "10M to 20M")
+```
+
+## IN THIS VERSION OF THE STEAM DATASET, all but of the games listed as having more than 20 million players are freemium? free to start? free to play? (pick your poison) games
+
+```{r}
+# ADDING A COLUMN TO FIND THE FREE TO PLAY STUFF
+
+steam <- steam %>% 
+  mutate(free_to_play = case_when(
+    str_detect(genres, "Free to Play") ~ TRUE,
+    str_detect(steamspy_tags,"Free to Play") ~ TRUE,
+    price == 0.00 ~ TRUE,
+    TRUE ~ FALSE
+  ),.after = publisher) 
+```
+
+```{r}
+steam %>% 
+  filter(free_to_play == TRUE)
+```
+
+
+
+```{r}
+# Column to find all the VR stuff
+steam <- steam %>% 
+  mutate(virtual_reality_support = case_when(
+    str_detect(name, "VR") ~ TRUE,
+    str_detect(steamspy_tags,"VR") ~ TRUE,
+    TRUE ~ FALSE
+  ),.after = free_to_play)
+```
+
+```{r}
+steam %>% 
+  filter(virtual_reality_support == TRUE)
+```
+```{r}
+# Now the same but for multi-player - Local and Online 
+steam <- steam %>% 
+  mutate(multiplayer = case_when(
+    str_detect(categories, "Local Multi-Player") & str_detect(categories, "Online Multi-Player") & str_detect(categories, "Co-op") ~ "Local + Online + Co-op",
+    str_detect(categories, "Local Multi-Player") & str_detect(categories, "Online Multi-Player") & !str_detect(categories, "Co-op") ~ "Local + Online",
+    str_detect(categories, "Local Multi-Player") & str_detect(categories, "Co-op") & !str_detect(categories, "Online Multi-Player") ~ "Local + Co-op",
+    str_detect(categories, "Online Multi-Player") & str_detect(categories, "Co-op") & !str_detect(categories, "Local Multi-Player") ~ "Online + Co-op",
+    str_detect(categories, "Local Multi-Player") & !str_detect(categories, "Online Multi-Player") ~ "Local only",
+    str_detect(categories, "Online Multi-Player") & !str_detect(categories, "Local Multi-Player") ~ "Online only",
+    str_detect(categories, "Multi-player") & str_detect(categories, "MMO") | str_detect(steamspy_tags, "MMO") ~ "Online only",
+    str_detect(categories, "Co-op") ~ "Co-op multiplayer",
+    str_detect(categories, "Multi-player") & !str_detect(categories, "Online Multi-Player") & !str_detect(categories, "Local Multi-Player") ~ "Multiplayer (Unspecified)",
+    TRUE ~ "No multiplayer"
+  ),.after = virtual_reality_support) 
+
+# I think i could add more levels, but not right now
+# remember exactly one comment ago when i said "local and online" 
+```
+
+```{r}
+steam_checkpoint <- steam
+```
+
+# Pretty happy with steam data - Could adjust average/median playtime to be hours (assuming that they are currently recorded in minutes), or adding a ratio 
+  to ratings (similiar to how steam does it)
+__________
+  
+  CHECKPOINT
+Don't bother running anything above this - anything worth saving has been saved in 
+  
+```{r}
+write_csv(steam_checkpoint, "raw_data/steam_checkpoint.csv")
+```
+
+_________
+
+```{r}
+library(tidyverse)
+library(janitor)
+
+steam <- read_csv("raw_data/steam_checkpoint.csv")
+```
+
