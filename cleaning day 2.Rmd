@@ -1,0 +1,70 @@
+---
+title: "DAY 2"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+library(janitor)
+
+steam <- read_csv("raw_data/steam_checkpoint.csv")
+```
+
+Where was i?
+
+```{r}
+games_pre_cleaned <- read_csv("raw_data/Cleaned Data 2 GVGS&R.csv")
+```
+
+```{r}
+games_pre_cleaned
+```
+How dare you do the work for me
+
+```{r}
+games_raw <- read_csv("raw_data/Raw Data GVGS&R.csv")
+```
+
+```{r}
+games_raw %>% 
+  filter(Name == "Minecraft")
+```
+Why does everyone have the same dataset
+
+back to steam i guess
+
+```{r}
+steam
+```
+
+```{r}
+steam %>% 
+  distinct(genres)
+```
+
+Already have F2P covered by another column, so we can drop that in genres
+
+```{r}
+steam %>% 
+  mutate(genres = str_remove_all(genres, "Free to Play")) %>% 
+  filter(free_to_play == TRUE)
+```
+
+Is this worth doing?
+Duplicated info doesn't hurt i suppose - leave it for now
+
+single player?
+
+```{r}
+steam <- steam %>% 
+  mutate(singleplayer = case_when(
+    str_detect(categories, "Single-player") ~ TRUE,
+    str_detect(steamspy_tags, "Singleplayer") ~ TRUE,
+    TRUE ~ FALSE
+  ),.before = multiplayer)
+```
+
+```{r}
+steam %>% 
+  filter(free_to_play == TRUE) 
+```

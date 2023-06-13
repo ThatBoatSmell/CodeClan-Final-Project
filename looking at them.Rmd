@@ -280,8 +280,8 @@ games_sales %>%
 ```
 
 ```{r}
-games_sales %>% 
-  group_by(name) %>% 
+# games_sales %>% 
+#   group_by(name) %>% 
   
 ```
 # might have to faff around to get an accurate picture of sales for this one
@@ -329,16 +329,16 @@ steam <- steam %>%
 
 # approx 1000 aren't - but who are they?
 
-steam %>% 
-  filter(english == 0) %>% 
-  filter(owners != "0-20000")
+# steam %>% 
+#   filter(english == 0) %>% 
+#   filter(owners != "0-20000")
 
 # Majority seem to be chinese/japanese/russian in origin. Probably not really in the scope of a dundee based company
 # This mainly suggests that these are titles that don't have support for  multiple languages
 # Also don't seem to have a lot of sales. Can probably justify just dropping these for the time being.
 ```
 
-# HYPOTHESIS TEST: IN STEAM DATA, DOES HAVING SUPPORT FOR MULTIPLE LANGUAGES AFFECT SALES? DUNNO MATE BUT I CAN CHECK I GUESS
+# HYPOTHESIS TEST: IN STEAM DATA, DOES HAVING SUPPORT FOR MULTIPLE LANGUAGES AFFECT SALES? 
 
 ```{r}
 # make platforms wider - windows_support = TRUE/FALSE, mac_support = TRUE/FALSE, linux_support = TRUE/FALSE
@@ -403,7 +403,7 @@ steam <- steam %>%
   mutate(free_to_play = case_when(
     str_detect(genres, "Free to Play") ~ TRUE,
     str_detect(steamspy_tags,"Free to Play") ~ TRUE,
-    price == 0.00 ~ TRUE,
+   # price == 0.00 ~ TRUE,
     TRUE ~ FALSE
   ),.after = publisher) 
 ```
@@ -454,7 +454,7 @@ steam_checkpoint <- steam
 ```
 
 # Pretty happy with steam data - Could adjust average/median playtime to be hours (assuming that they are currently recorded in minutes), or adding a ratio 
-  to ratings (similiar to how steam does it)
+  to ratings (similar to how steam does it)
 __________
   
   CHECKPOINT
@@ -466,10 +466,6 @@ write_csv(steam_checkpoint, "raw_data/steam_checkpoint.csv")
 
 _________
 
-```{r}
-library(tidyverse)
-library(janitor)
 
-steam <- read_csv("raw_data/steam_checkpoint.csv")
-```
+
 
