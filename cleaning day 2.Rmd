@@ -68,6 +68,33 @@ steam <- steam %>%
 steam %>% 
   filter(free_to_play == TRUE) 
 ```
+```{r}
+steam
+```
+```{r}
+# adding column to simplify ratings 
+steam <- steam %>% 
+  mutate(total_reviews = positive_ratings +  negative_ratings) %>% 
+  arrange(desc(total_reviews)) %>% 
+  mutate(percent_positive_reviews = positive_ratings / total_reviews) %>% 
+  mutate(general_rating = case_when(
+    total_reviews > 1000 & percent_positive_reviews >= 0.95 ~ "Extremely Positive",
+    total_reviews > 1000 & percent_positive_reviews >= 0.75 ~ "Positive",
+    total_reviews > 1000 & percent_positive_reviews >= 0.55 ~ "Mostly Positive",
+    total_reviews > 1000 & percent_positive_reviews >= 0.50 ~ "Mixed" ,
+    total_reviews > 1000 & percent_positive_reviews >= 0.35 ~ " Mostly Negative",
+    total_reviews > 1000 & percent_positive_reviews >= 0.15 ~ "Negative",
+    total_reviews > 1000 & percent_positive_reviews < 0.15 ~ "Extremely Negative",
+    positive_ratings == 0 ~ "No Positive Reviews",
+    negative_ratings == 0 ~ "No Negative Reviews",
+    positive_ratings & negative_ratings == 0 ~ "No Reviews",
+    total_reviews < 1000 ~ "Not Enough Reviews",
+    TRUE ~ "No Data"
+  ),.before = positive_ratings) %>% 
+  select(-percent_positive_reviews)
+```
+
+
 
 ```{r}
 backloggd <- read_csv("clean_data/backloggd_clean.csv")
@@ -204,20 +231,48 @@ games_raw %>%
 ```
 
 ```{r}
-help <- read_csv("raw_data/sales-2019.csv")
+sales_2019 <- read_csv("raw_data/sales-2019.csv")
 ```
 
 ```{r}
-help %>% 
+sales_2019 %>% 
   distinct(Year) %>% 
   arrange(desc(Year))
 ```
 ```{r}
-help %>% 
+sales_2019 %>% 
   filter(Year == "2019") %>% 
-  select(Name, Year)
+  select(Name, Year, Platform)
 
-# these datasets contain nonsense release years.
+# data for 2020 is total nonsense. Some information in 2019 is incorrect.
 ```
-This is an extremely important point to note - Of all the datasets investigated so far __all of them contain inaccurate information beyond a certain point__
-This means that it is extremely difficult to make a real accurate decision based on data __as more recent data (i.e within 5 years) is missing or incorrect__
+# Going off the fact that there is the majority of usable information i am able to get is from 2019 or before, we're just going to pretend we're living in an 
+# alternative 2019
+
+As such, i am dropping all data from 2020 in this dataset 
+
+```{r}
+sales_2019 <- sales_2019 %>% 
+  filter(Year != "2020")
+```
+
+# Looking at backloggd again
+
+```{r}
+backloggd
+```
+```{r}
+# creating a range_rating column to reduce noise when it comes to plotting results
+backlogged <- backloggd %>% 
+  mutate(rating_range = case_when(
+    rating < 5 & rating >= 4 ~ "4+",
+    rating < 4 & rating >= 3 ~ "3 to 4",
+    rating < 3 & rating >= 2 ~ "2 to 3",
+    rating < 2 & rating >= 1 ~ "1 to 2",
+    rating < 1 ~ ">1",
+    TRUE ~ "No rating"
+  ))
+```
+
+
+
