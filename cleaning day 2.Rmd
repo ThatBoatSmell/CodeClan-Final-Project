@@ -68,3 +68,156 @@ steam <- steam %>%
 steam %>% 
   filter(free_to_play == TRUE) 
 ```
+
+```{r}
+backloggd <- read_csv("clean_data/backloggd_clean.csv")
+```
+
+```{r}
+backloggd
+```
+
+
+```{r}
+games_raw <- games_raw %>% 
+  clean_names()
+```
+
+```{r}
+# Platform isn't a genre - correcting
+games_raw <- games_raw %>% 
+  mutate(genre = case_when(
+    genre == "Platform" ~ "Platformer",
+    TRUE ~ genre
+  ))
+```
+
+```{r}
+nintendo_published <- games_raw %>% 
+  filter(publisher == "Nintendo")
+```
+
+```{r}
+genre_publisher_sales <- games_raw %>%  
+  group_by(publisher, genre) %>% 
+  summarise(sum(global_sales)) %>% 
+  arrange(desc(`sum(global_sales)`))
+```
+```{r}
+write_csv(genre_publisher_sales, "clean_data/genre_by_publisher.csv")
+```
+
+```{r}
+genre_publisher_sales %>% 
+  filter(publisher == "From Software")
+```
+
+```{r}
+games_raw %>% 
+  distinct(rating)
+```
+
+
+```{r}
+# clarifying that the rating is for ESRP - the american system
+games_raw <- games_raw %>% 
+  rename("esrp" = "rating") 
+```
+
+```{r}
+# Adding PEGI equivalent 
+games_raw <- games_raw %>% 
+  mutate(pegi_equivalent = case_when(
+    esrp == "EC" ~ "3",
+    esrp == "E" ~ "7",
+    esrp == "E10+" ~ "12",
+    esrp == "T" ~ "16",
+    esrp == "M" ~ "18",
+    esrp == "AO" ~ "18",
+    esrp == "K-A" ~ "7",
+    esrp == "RP" ~ "No Rating",
+    TRUE ~ "No Rating Found"
+  )) 
+  
+```
+
+```{r}
+total_sales_by_genre <- games_raw %>% 
+  group_by(genre) %>% 
+  summarise(sum(global_sales)) %>% 
+  rename("total_sales" = "sum(global_sales)") %>% 
+  arrange(desc(total_sales))
+```
+
+```{r}
+total_sales_by_genre <- total_sales_by_genre %>% 
+  drop_na()
+```
+
+```{r}
+games_raw 
+```
+
+```{r}
+breakdown_sales_by_genre <- games_raw %>% 
+  group_by(genre) %>% 
+  summarise(sum(na_sales), sum(eu_sales), sum(jp_sales), sum(other_sales)) %>% 
+  rename("total_na_sales"= "sum(na_sales)", "total_eu_sales" = "sum(eu_sales)", "total_jp_sales" = "sum(jp_sales)", "total_other_sales" = "sum(other_sales)")
+```
+
+```{r}
+total_sales_by_genre # this seems to have some rounding differences compared to breakdown, so i'll retire this one 
+```
+how does the sales for the top 3 genres look in each region?
+
+
+```{r}
+breakdown_sales_by_genre <- breakdown_sales_by_genre %>% 
+  group_by(genre) %>% 
+  mutate(total_sales = sum(total_na_sales + total_eu_sales + total_jp_sales + total_other_sales)) %>% 
+  drop_na()
+```
+```{r}
+
+breakdown_sales_by_genre %>% 
+  filter(genre %in% c("Action", "Sports", "Shooter")) %>% 
+  ggplot(aes(x = total_sales, y = genre))+
+  geom_col() +
+  geom_col(aes(x = total_na_sales), fill = "green")+
+  geom_col(aes(x = total_eu_sales), fill = "red") +
+  geom_col(aes(x = total_jp_sales), fill = "blue") 
+
+# this looks shit
+```
+
+What about trends? How did each genres sales adjust every 5 or so years?
+
+```{r}
+games_raw %>% 
+  filter(year_of_release == "2016")
+
+games_raw %>% 
+  mutate(year_of_release = as.integer(year_of_release)) %>% 
+  distinct(year_of_release) %>% 
+  arrange(year_of_release)
+
+```
+
+```{r}
+help <- read_csv("raw_data/sales-2019.csv")
+```
+
+```{r}
+help %>% 
+  distinct(Year) %>% 
+  arrange(desc(Year))
+```
+```{r}
+help %>% 
+  filter(Year == "2019") %>% 
+  select(Name, Year)
+
+# these datasets contain nonsense release years.
+```
+This is an extremely important point to note - Of all the datasets investigated so far __all of them contain inaccurate information beyond a certain point__
+This means that it is extremely difficult to make a real accurate decision based on data __as more recent data (i.e within 5 years) is missing or incorrect__
