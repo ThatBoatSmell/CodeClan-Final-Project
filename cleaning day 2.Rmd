@@ -624,5 +624,40 @@ backloggd_genres %>%
    labs(fill = "Genre")
 ```
 
-# We have established that Indie, Action and Adventure games seem to be the most popular - But what examples of these are there?
+# We have established that Indie, Action and Adventure games seem to be the most popular - But what other elements make them popular?
+
+## Note: Action and Adventure are pretty interchangable nothing terms that describe like 90% of titles but oh well
+### Like would you compare Nier Automata to Donkey Kong Jungle Beat? I wouldn't but who am i to say
+
+```{r}
+steam_pos_aai <- steam_years %>% 
+  filter(general_rating == "Extremely Positive" | general_rating == "Positive") %>% 
+  group_by(name) %>% 
+  filter(any(value %in% c("Indie", "Action", "Adventure"))) 
+```
+
+```{r}
+write_csv(steam_pos_aai, "clean_data/steam_positive_ratings_aai.csv")
+```
+
+and for comparison
+
+```{r}
+steam_pos <- steam_years %>% 
+  filter(general_rating == "Extremely Positive" | general_rating == "Positive") %>% 
+  group_by(name)
+```
+
+```{r}
+steam_pos_aai
+```
+
+```{r}
+write_csv(steam_pos, "clean_data/steam_positive_ratings.csv")
+
+```
+
+
+
+
 
