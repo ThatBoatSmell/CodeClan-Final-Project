@@ -654,10 +654,55 @@ steam_pos_aai
 
 ```{r}
 write_csv(steam_pos, "clean_data/steam_positive_ratings.csv")
-
 ```
 
+# Make a model that tries to guess if a game is positively rated?
 
+# ```{r}
+# steam_model_base <- steam %>% 
+#   separate(col = genres, sep = ";", into = paste0("Genre", seq_len(max(nchar(.$genres))))) %>% 
+#   select(-Genre14:-Genre180)
+# ```
+# ```{r}
+# steam_model_base %>% 
+#   separate(col = categories, sep = ";", into = paste0("categories", seq_len(max(nchar(.$categories))))) %>% 
+#   select(-categories21:-categories299)
+# ```
+# 
+# ```{r}
+# steam %>% 
+#   select(categories) %>% 
+#  mutate(length_cat = nchar(categories)) %>% 
+#   arrange(desc(length_cat))
+# ```
 
+This is idiotic. There are far too many variables. Might mutate a few of these into logicals, like controller support
 
+__________________________________________
 
+```{r}
+steam <- steam %>% 
+  mutate(controller_support = case_when(
+    str_detect(categories, "Full controller support") ~ "Full",
+    str_detect(categories, "Partial Controller support") ~ "Partial",
+    TRUE ~ "No"
+  ),.after = virtual_reality_support)
+```
+
+```{r}
+steam <- steam %>% 
+  mutate(steam_workshop = case_when(
+    str_detect(categories, "Steam Workshop") ~ TRUE,
+    TRUE ~ FALSE
+  ),.after = controller_support) 
+```
+
+```{r}
+steam
+```
+
+```{r}
+write_csv(steam, "raw_data/steam_checkpoint_2.csv")
+```
+
+Ok so what do i need to do tomorrow - Continue working on visualisations, maybe make a model that tries to see what factors make games do well on steam?
