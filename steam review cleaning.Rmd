@@ -1,0 +1,27 @@
+---
+title: "help i've embarked on a silly quest"
+output: html_notebook
+---
+```{r}
+library(tidyverse)
+
+steam_reviews <- read_csv("raw_data/steam_reviews.csv")
+```
+
+```{r}
+steam_reviews %>% 
+  group_by(app_name) %>% 
+  count(nrow(review_text))
+```
+```{r}
+sample_reviews <- sample(1:nrow(steam_reviews), 10000)
+```
+
+```{r}
+random_sample <- steam_reviews[sample_reviews, ]
+```
+
+```{r}
+write_csv(random_sample, "raw_data/sample_of_steam_reviews.csv")
+```
+

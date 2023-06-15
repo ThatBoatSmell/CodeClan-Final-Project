@@ -1,0 +1,223 @@
+---
+title: "Day The Four"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+steam <- read_csv("raw_data/steam_checkpoint_2.csv")
+```
+
+```{r}
+steam
+```
+
+```{r}
+steam %>% 
+  distinct(required_age)
+```
+
+For the purposes of making a model, what would we want the target to be? If we were to create a column called "successful", what variables would it look for?
+
+```{r}
+
+steam %>%
+  separate(col = steamspy_tags, sep = ";", into = c("tag_1", "tag_2", "tag_3")) %>% 
+  pivot_longer(cols = c("tag_1", "tag_2", "tag_3"), values_to = "tags", names_to = "drop_me") %>% 
+  drop_na(tags) 
+
+```
+
+```{r}
+
+```
+
+____________________________________
+
+# For now, im gonna do some text stuff using backloggd reviews
+
+```{r}
+backloggd_reviews <- read_csv("clean_data/backloggd_reviews.csv")
+```
+
+```{r}
+# separating reviews into their own columns so i can manage them
+reviews_separated <- backloggd_reviews %>% 
+  separate_longer_delim(cols = "reviews", delim = "',\ \'") %>% 
+  separate_longer_delim(cols = "reviews", delim = "\',\ \"") %>% 
+  separate_longer_delim(cols = "reviews", delim = "\",\ \'") %>%  
+  separate_longer_delim(cols = "reviews", delim = "\",\ \"") %>% 
+  unique() %>% 
+  # removing all the opening and closing rubbish
+  mutate(reviews = str_remove_all(string = reviews, pattern = "\\[\""),
+         reviews = str_remove_all(string = reviews, pattern = "\\[\'"),
+         reviews = str_remove_all(string = reviews, pattern = "\"\\]"),
+         reviews = str_remove_all(string = reviews, pattern = "\'\\]")) 
+
+```
+
+```{r}
+reviews_separated %>% 
+  group_by(title) %>% 
+  count(title)
+```
+
+# lets split this into ratings, like i did with the other backloggd thing
+```{r}
+reviews_separated <- reviews_separated %>% 
+  mutate(rating_range = case_when(
+    rating < 5 & rating >= 4 ~ "4+",
+    rating < 4 & rating >= 3 ~ "3 to 4",
+    rating < 3 & rating >= 2 ~ "2 to 3",
+    rating < 2 & rating >= 1 ~ "1 to 2",
+    rating < 1 ~ ">1",
+    TRUE ~ "No rating"
+  ))
+```
+
+Before doing text analysis, lets convert everything to lower case - this might take away some context via capitalisation, but we only have
+6 reviews per game so gotta work with what we have
+
+```{r}
+reviews_lower_separated <- reviews_separated %>% 
+  mutate(reviews = tolower(reviews)) #%>% 
+  #filter(reviews %in% c("í", "ñ", "é", "á", "ó", "á") == FALSE)
+```
+
+```{r}
+library(textdata)
+library(tidytext)
+```
+
+```{r}
+de_stopwords <- tibble(word = stopwords("de"))
+
+reviews_3_to_5_stop <- reviews_lower_separated %>% 
+  filter(rating_range == "4+" | rating_range == "3 to 4") %>% 
+  select(-summary) %>% 
+  unnest_tokens(input = reviews, output = word) %>% 
+  anti_join(filter(stop_words, lexicon == "SMART")) %>% 
+  anti_join(game_stop_words) %>% 
+  anti_join(pt_stopwords) %>% 
+  anti_join(de_stopwords) %>% 
+  count(word, sort = TRUE)
+  
+```
+
+```{r}
+ggwordcloud(words = reviews_3_to_5_stop$word, freq = reviews_3_to_5_stop$n, random.color = TRUE, 
+            colors =  c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"), min.freq = 10)
+```
+
+```{r}
+reviews_3_to_5_stop
+```
+```{r}
+reviews_3_to_lowest_stop <- reviews_lower_separated %>% 
+  filter(rating_range == "2 to 3" | rating_range == "1 to 2" | rating_range == ">1") %>% 
+  select(-summary) %>% 
+  unnest_tokens(input = reviews, output = word) %>% 
+  anti_join(filter(stop_words, lexicon == "SMART")) %>% 
+  anti_join(game_stop_words) %>% 
+  anti_join(pt_stopwords) %>% 
+  anti_join(de_stopwords) %>% 
+  count(word, sort = TRUE)
+
+```
+
+```{r}
+ggwordcloud(words = reviews_3_to_lowest_stop$word, freq = reviews_3_to_lowest_stop$n, random.color = TRUE, 
+            colors =  c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"), min.freq = 5)
+```
+bigrams might be more appropriate for bad reviews
+
+```{r}
+bigrams_3_to_lowest_stop <- reviews_lower_separated %>% 
+  filter(rating_range == "2 to 3" | rating_range == "1 to 2" | rating_range == ">1") %>% 
+  unnest_tokens(bigram, reviews, token = "ngrams", n = 2) %>% 
+  count(bigram, sort = TRUE) %>%  # count bigrams
+  separate(bigram, into = c("word1", "word2"), sep = " ") %>% # split bigrams into two seperate columns
+  anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
+  anti_join(stop_words, join_by("word2" == "word")) %>% 
+  anti_join(pt_stopwords, join_by("word1" == "word")) %>% 
+  anti_join(pt_stopwords, join_by("word2" == "word")) %>% 
+  anti_join(game_stop_words, join_by("word1" == "word")) %>% 
+  anti_join(game_stop_words, join_by("word2" == "word")) %>% 
+  anti_join(de_stopwords, join_by("word1" == "word")) %>% 
+  anti_join(de_stopwords, join_by("word2" == "word")) %>% 
+  drop_na() %>% 
+  unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
+  anti_join(game_stop_bigrams)
+```
+
+```{r}
+ggwordcloud(words = bigrams_3_to_lowest_stop$bigram, freq = bigrams_3_to_lowest_stop$n, random.color = TRUE, 
+            colors =  c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"), min.freq = 1)
+```
+well fine lets remove game names as well
+
+ok that still kinda sucks
+
+```{r}
+game_stop_bigrams <- reviews_backloggd %>% 
+  select(title) %>% 
+  unnest_tokens(bigram, title, token = "ngrams", n = 2) %>% 
+  drop_na()
+```
+
+
+```{r}
+reviews_3_to_lowest_stop
+```
+```{r}
+game_stop_words <- tibble(
+  word = c("game", "gameplay", "time", "played", "play", "de", "playing", "jogo", "é", "games") # lets try doing n-grams before populating this
+)
+```
+
+
+```{r}
+library(stopwords)
+
+es_stopwords <- tibble(word = stopwords("es"))
+pt_stopwords <- tibble(word = stopwords("pt"))
+```
+
+
+```{r}
+bigrams_3_to_5_no_stop <- reviews_lower_separated %>% 
+  filter(rating_range == "4+" | rating_range == "3 to 4") %>% 
+  unnest_tokens(bigram, reviews, token = "ngrams", n = 2) %>% 
+  count(bigram, sort = TRUE) %>%  # count bigrams
+  separate(bigram, into = c("word1", "word2"), sep = " ") %>% # split bigrams into two seperate columns
+  anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
+  anti_join(stop_words, join_by("word2" == "word")) %>% 
+  anti_join(pt_stopwords, join_by("word1" == "word")) %>% 
+  anti_join(pt_stopwords, join_by("word2" == "word")) %>% 
+  anti_join(game_stop_words, join_by("word1" == "word")) %>% 
+  anti_join(game_stop_words, join_by("word2" == "word")) %>% 
+  drop_na() %>% 
+  unite(col = "bigram", word1:word2, sep = " ", remove = TRUE)
+
+bigrams_3_to_5_w_stop <- reviews_lower_separated %>% 
+  filter(rating_range == "4+" | rating_range == "3 to 4") %>% 
+  unnest_tokens(bigram, reviews, token = "ngrams", n = 2) %>%  # create bigrams
+  count(bigram, sort = TRUE) 
+
+```
+
+
+```{r}
+  ggwordcloud(words = bigrams_3_to_5_no_stop$bigram, freq = bigrams_3_to_5_no_stop$n, random.color = TRUE, colors =  c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"))
+```
+
+ok what if we try some of that tf-idf stuff
+
+```{r}
+reviews_separated %>% 
+  unnest_tokens(input = reviews, output = word)
+```
+

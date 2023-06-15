@@ -124,6 +124,7 @@ games_backloggd <- games_backloggd %>%
 games_backloggd
 
 ```
+
 ```{r}
 # Converted the below code into a function so i can reuse it
 character_k_to_numeric <- function(x) {
@@ -221,9 +222,11 @@ games_backloggd <- games_backloggd %>%
 ```
 
 ```{r}
-# keeping these separate incase i need them
+# keeping these separate incase i need them - only keeping first 4 genre tags - majority don't have more than that, and if they do, too bad
 reviews_backloggd <- games_backloggd %>% 
-  select(title, summary, reviews) 
+  select(title, summary, reviews, rating, genre_tag, genre_tag_2, genre_tag_3, genre_tag_4) 
+
+write_csv(reviews_backloggd, "clean_data/backloggd_reviews.csv")
 ```
 
 ```{r}
