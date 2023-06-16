@@ -60,7 +60,13 @@ negative_sample_words <- sampled_reviews %>%
   anti_join(stop_words) %>% 
   anti_join(game_stop_words) %>% 
   count(word) %>% 
-  arrange(desc(n))
+  arrange(desc(n)) %>% 
+  inner_join(get_sentiments("bing")) %>% 
+  filter(sentiment == "negative") 
+```
+```{r}
+get_sentiments("nrc") %>% 
+  distinct(sentiment)
 ```
 
 
@@ -156,6 +162,11 @@ test_negative_sentiments <- sampled_reviews %>%
   anti_join(game_stop_bigrams)
 
 ```
+```{r}
+test_negative_sentiments %>% 
+  mutate(length = nchar(bigram)) %>% 
+  arrange(desc(length))
+```
 
 ```{r}
 get_sentiments("bing")
@@ -193,5 +204,90 @@ positive_sample_sentiment <- sampled_reviews %>%
 
 ```{r}
 ggwordcloud(words = positive_sample_sentiment$word, freq = positive_sample_sentiment$n, random.color = TRUE, colors =  c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"), min.freq = 5)
+```
+```{r}
+# What about trigrams?
+
+# Not really much different - Not gonna bother
+
+# sampled_reviews %>% 
+#   filter(review_score == "Negative") %>% 
+#   unnest_tokens(trigram, review_text, token = "ngrams", n = 3) %>% 
+#   count(trigram, sort = TRUE) %>%  # count bigrams
+#   separate(trigram, into = c("word1", "word2", "word3"), sep = " ") %>% # split bigrams into two seperate columns
+#   # anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
+#   # anti_join(stop_words, join_by("word2" == "word")) %>% 
+#   # anti_join(stop_words, join_by("word2" == "word")) %>% 
+#  # anti_join(game_stop_words, join_by("word1" == "word")) %>% 
+#  # anti_join(game_stop_words, join_by("word2" == "word")) %>% 
+#   anti_join(early_access_words, join_by("word1" == "word")) %>%
+#   anti_join(early_access_words, join_by("word2" == "word")) %>% 
+#   anti_join(early_access_words, join_by("word3" == "word"))
+#   #drop_na() %>% 
+#   inner_join(get_sentiments("bing"), join_by("word1" == "word")) %>% 
+#   inner_join(get_sentiments("bing"), join_by("word2" == "word")) %>% 
+#   inner_join(get_sentiments("bing"), join_by("word3" == "word")) %>% 
+#   mutate(total_sentiment = case_when(
+#     sentiment.x == "positive" & sentiment.y == "negative" ~ "negative",
+#     sentiment.x == "negative" & sentiment.y == "negative" ~ "negative",
+#     sentiment.x == "positive" & sentiment.y == "positive" ~ "positive",
+#     sentiment.x == "negative" & sentiment.y == "positive" ~ "positive",
+#     TRUE ~ "this shouldn't appear"
+#   )) %>% 
+#   select(-sentiment.x, -sentiment.y) %>% 
+#   filter(total_sentiment == "negative") %>% 
+#   drop_na() %>% 
+#   unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
+#   anti_join(game_stop_bigrams)
+
+```
+
+```{r}
+# what if we combine the negative bigrams with the negative words?
+test_negative_sentiments %>% 
+  rename("word" = "bigram", "sentiment" = "total_sentiment") %>% 
+  bind_rows(negative_sample_words) %>% 
+  arrange(desc(n))
+
+# Single words completely dominate the bigrams.  Maybe take a sample of 1000 random words?Although i suppose that kind of defeats the purpose
+```
+
+
+```{r}
+# What if we take the negative bigrams, but don't filter out the stop words?
+
+sampled_reviews %>% 
+  filter(review_score == "Negative") %>% 
+  unnest_tokens(bigram, review_text, token = "ngrams", n = 2) %>% 
+  count(bigram, sort = TRUE) %>%  # count bigrams
+  separate(bigram, into = c("word1", "word2"), sep = " ") %>% # split bigrams into two seperate columns
+  # anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
+  # anti_join(stop_words, join_by("word2" == "word")) %>% 
+ # anti_join(game_stop_words, join_by("word1" == "word")) %>% 
+ # anti_join(game_stop_words, join_by("word2" == "word")) %>% 
+  anti_join(early_access_words, join_by("word1" == "word")) %>%
+  anti_join(early_access_words, join_by("word2" == "word")) %>% 
+  drop_na() %>% 
+  inner_join(get_sentiments("bing"), join_by("word1" == "word")) %>% 
+  inner_join(get_sentiments("bing"), join_by("word2" == "word")) %>% 
+  mutate(total_sentiment = case_when(
+    sentiment.x == "positive" & sentiment.y == "negative" ~ "negative",
+    sentiment.x == "negative" & sentiment.y == "negative" ~ "negative",
+    sentiment.x == "positive" & sentiment.y == "positive" ~ "positive",
+    sentiment.x == "negative" & sentiment.y == "positive" ~ "positive",
+    TRUE ~ "this shouldn't appear"
+  )) %>% 
+  select(-sentiment.x, -sentiment.y) %>% 
+  filter(total_sentiment == "negative") %>% 
+  drop_na() %>% 
+  unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
+  anti_join(game_stop_bigrams)
+```
+I think i just need more negative reviews. Time to dive back into the steam reviews dataset
+
+Ok now i have a million negative reviews and a million positive reviews
+
+```{r}
+
 ```
 

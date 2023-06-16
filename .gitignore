@@ -50,3 +50,7 @@ rsconnect/
 
 # massive steam reviews folder
 /reviews/steam_reviews.csv
+
+# steam reviews again
+/raw_data/negative_steam_reviews.csv
+/raw_data/positive_steam_reviews.csv

@@ -26,18 +26,45 @@ write_csv(random_sample, "raw_data/sample_of_steam_reviews.csv")
 ```
 
 ```{r}
-steam_reviews %>% 
-  select(-review_vote) %>% 
-  filter(review_score == "Positive") %>% 
-  unnest_tokens(bigram, review_text, token = "ngrams", n = 2) %>% 
-  count(bigram, sort = TRUE) %>%  # count bigrams
-  separate(bigram, into = c("word1", "word2"), sep = " ") %>% # split bigrams into two seperate columns
-  anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
-  anti_join(stop_words, join_by("word2" == "word")) %>% 
-  anti_join(game_stop_words, join_by("word1" == "word")) %>% 
-  anti_join(game_stop_words, join_by("word2" == "word")) %>% 
-  drop_na() %>% 
-  unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
-  anti_join(game_stop_bigrams)
+# THIS IS TOO BIG TO RUN DON'T BE A FOOL
+# steam_reviews %>% 
+#   select(-review_vote) %>% 
+#   filter(review_score == "Positive") %>% 
+#   unnest_tokens(bigram, review_text, token = "ngrams", n = 2) %>% 
+#   count(bigram, sort = TRUE) %>%  # count bigrams
+#   separate(bigram, into = c("word1", "word2"), sep = " ") %>% # split bigrams into two seperate columns
+#   anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
+#   anti_join(stop_words, join_by("word2" == "word")) %>% 
+#   anti_join(game_stop_words, join_by("word1" == "word")) %>% 
+#   anti_join(game_stop_words, join_by("word2" == "word")) %>% 
+#   drop_na() %>% 
+#   unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
+#   anti_join(game_stop_bigrams)
+```
+
+```{r}
+negative_reviews <- steam_reviews %>% 
+  filter(review_score == "-1")
+```
+
+```{r}
+write_csv(negative_reviews, "raw_data/negative_steam_reviews.csv")
+```
+
+```{r}
+positive_reviews <- steam_reviews %>% 
+  filter(review_score == "1")
+```
+
+```{r}
+sample_pos_reviews <- sample(1:nrow(positive_reviews), 1000000)
+```
+
+```{r}
+random_pos_sample <- steam_reviews[sample_pos_reviews, ]
+```
+
+```{r}
+write_csv(random_pos_sample, "raw_data/positive_steam_reviews.csv")
 ```
 
