@@ -5,7 +5,7 @@ output: html_notebook
 ```{r}
 library(tidyverse)
 
-steam_reviews <- read_csv("raw_data/steam_reviews.csv")
+steam_reviews <- read_csv("reviews/steam_reviews.csv")
 ```
 
 ```{r}
@@ -14,7 +14,7 @@ steam_reviews %>%
   count(nrow(review_text))
 ```
 ```{r}
-sample_reviews <- sample(1:nrow(steam_reviews), 10000)
+sample_reviews <- sample(1:nrow(steam_reviews), 100000)
 ```
 
 ```{r}
@@ -23,5 +23,21 @@ random_sample <- steam_reviews[sample_reviews, ]
 
 ```{r}
 write_csv(random_sample, "raw_data/sample_of_steam_reviews.csv")
+```
+
+```{r}
+steam_reviews %>% 
+  select(-review_vote) %>% 
+  filter(review_score == "Positive") %>% 
+  unnest_tokens(bigram, review_text, token = "ngrams", n = 2) %>% 
+  count(bigram, sort = TRUE) %>%  # count bigrams
+  separate(bigram, into = c("word1", "word2"), sep = " ") %>% # split bigrams into two seperate columns
+  anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
+  anti_join(stop_words, join_by("word2" == "word")) %>% 
+  anti_join(game_stop_words, join_by("word1" == "word")) %>% 
+  anti_join(game_stop_words, join_by("word2" == "word")) %>% 
+  drop_na() %>% 
+  unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
+  anti_join(game_stop_bigrams)
 ```
 

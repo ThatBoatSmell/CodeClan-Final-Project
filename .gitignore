@@ -47,3 +47,6 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# massive steam reviews folder
+/reviews/steam_reviews.csv
