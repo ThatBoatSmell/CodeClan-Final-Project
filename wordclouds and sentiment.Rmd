@@ -14,6 +14,12 @@ sampled_reviews <- read_csv("raw_data/sample_of_steam_reviews.csv")
 ```
 
 ```{r}
+palette_pos <-  c("#01295F", "#849324","#FFB30F", "#FD151B")
+palette_neg <- c("#FF8506", "#291211", "#F8CF0F", "#4C1600")
+```
+
+
+```{r}
 sampled_reviews <- sampled_reviews %>% 
   mutate(review_score = case_when(
     review_score == 1 ~ "Positive",
@@ -36,12 +42,14 @@ early_access_words <- tibble(
 ```
 
 slap in this bad boy to try and avoid having a load of game names in the wordcloud
+
 ```{r}
 game_stop_bigrams <- sampled_reviews %>% 
   select(app_name) %>% 
   unnest_tokens(bigram, app_name, token = "ngrams", n = 2) %>% 
   drop_na()
 ```
+
 
 ```{r}
 positive_sample_words <- sampled_reviews %>% 
@@ -79,10 +87,10 @@ sampled_reviews %>%
 
 
 ```{r}
-ggwordcloud(words = positive_sample_words$word, freq = positive_sample_words$n, random.color = TRUE, colors =  c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"), min.freq = 5)
+ggwordcloud(words = positive_sample_words$word, freq = positive_sample_words$n, random.color = TRUE, colors =  palette_pos, min.freq = 5)
 ```
 ```{r}
-ggwordcloud(words = negative_sample_words$word, freq = negative_sample_words$n, random.color = TRUE, colors =  c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"), min.freq = 5)
+ggwordcloud(words = negative_sample_words$word, freq = negative_sample_words$n, random.color = TRUE, colors =  palette_neg, min.freq = 5)
 ```
  
 ```{r}
@@ -103,11 +111,11 @@ positive_sample_bigrams <- sampled_reviews %>%
 ```
 
 ```{r}
-ggwordcloud(words = positive_sample_bigrams$bigram, freq = positive_sample_bigrams$n, random.color = TRUE, colors =  c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"), min.freq = 50)
+ggwordcloud(words = positive_sample_bigrams$bigram, freq = positive_sample_bigrams$n, random.color = TRUE, colors = palette_pos, min.freq = 50)
 ```
 
 ```{r}
-ggwordcloud(words = positive_sample_bigrams$bigram, freq = positive_sample_bigrams$n, random.color = TRUE, colors =  c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"), min.freq = 80)
+ggwordcloud(words = positive_sample_bigrams$bigram, freq = positive_sample_bigrams$n, random.color = TRUE, colors =  palette_pos, min.freq = 80)
 ```
 
 ```{r}
@@ -128,7 +136,7 @@ negative_sample_bigrams <- sampled_reviews %>%
 ```
 
 ```{r}
-ggwordcloud(words = negative_sample_bigrams$bigram, freq = negative_sample_bigrams$n, random.color = TRUE, colors =  c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"), min.freq = 15)
+ggwordcloud(words = negative_sample_bigrams$bigram, freq = negative_sample_bigrams$n, random.color = TRUE, colors =  palette_neg, min.freq = 15)
 ```
 
 Lets try slapping sentiment analysis on these and filter only by those with a negative sentiment?
@@ -172,7 +180,7 @@ test_negative_sentiments %>%
 get_sentiments("bing")
 ```
 ```{r}
-ggwordcloud(words = test_negative_sentiments $bigram, freq = test_negative_sentiments $n, random.color = TRUE, colors =  c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"), min.freq = 2)
+ggwordcloud(words = test_negative_sentiments $bigram, freq = test_negative_sentiments $n, random.color = TRUE, colors =  palette_neg, min.freq = 2)
 ```
 
 ```{r}
@@ -187,7 +195,9 @@ negative_sample_sentiment <- sampled_reviews %>%
   filter(sentiment == "negative")
 ```
 ```{r}
-ggwordcloud(words = negative_sample_sentiment$word, freq = negative_sample_sentiment$n, random.color = TRUE, colors =  c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"), min.freq = 5)
+ggwordcloud(words = negative_sample_sentiment$word, freq = negative_sample_sentiment$n, random.color = TRUE, colors =  palette_neg, min.freq = 5)
+
+ggsave("Visualisations/negative_steam_words.png", dpi = 500)
 ```
 
 ```{r}
@@ -203,7 +213,7 @@ positive_sample_sentiment <- sampled_reviews %>%
 ```
 
 ```{r}
-ggwordcloud(words = positive_sample_sentiment$word, freq = positive_sample_sentiment$n, random.color = TRUE, colors =  c("#ff595e", "#ffca3a", "#8ac926", "#1982c4", "#6a4c93"), min.freq = 5)
+ggwordcloud(words = positive_sample_sentiment$word, freq = positive_sample_sentiment$n, random.color = TRUE, colors =  palette_pos, min.freq = 5)
 ```
 ```{r}
 # What about trigrams?
@@ -283,11 +293,130 @@ sampled_reviews %>%
   unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
   anti_join(game_stop_bigrams)
 ```
+
+
+
 I think i just need more negative reviews. Time to dive back into the steam reviews dataset
 
 Ok now i have a million negative reviews and a million positive reviews
 
-```{r}
+Lets read them in and see if i break everything
 
+```{r}
+game_stop_bigrams_negative <- negative_reviews %>% 
+  select(app_name) %>% 
+  unnest_tokens(bigram, app_name, token = "ngrams", n = 2) %>% 
+  drop_na()
+
+game_stop_bigrams_positive <- positive_reviews %>% 
+  select(app_name) %>% 
+  unnest_tokens(bigram, app_name, token = "ngrams", n = 2) %>% 
+  drop_na()
+```
+
+```{r}
+negative_reviews <- read_csv("raw_data/negative_steam_reviews.csv")
+positive_reviews <- read_csv("raw_data/positive_steam_reviews.csv")
+```
+
+```{r}
+# seeing as we now have two separate datasets, we don't really need to keep anything except the reviews
+negative_reviews <- negative_reviews %>% 
+  select(-review_votes, -review_score, -app_id)
+```
+
+```{r}
+positive_reviews <- positive_reviews %>% 
+   select(-review_votes, -review_score, -app_id)
+```
+
+```{r}
+test_negative_sentiments <- negative_reviews %>% 
+  unnest_tokens(bigram, review_text, token = "ngrams", n = 2) %>% 
+  count(bigram, sort = TRUE) %>%  # count bigrams
+  separate(bigram, into = c("word1", "word2"), sep = " ") %>% # split bigrams into two seperate columns
+  anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
+  anti_join(stop_words, join_by("word2" == "word")) %>% 
+ # anti_join(game_stop_words, join_by("word1" == "word")) %>% 
+ # anti_join(game_stop_words, join_by("word2" == "word")) %>% 
+  anti_join(early_access_words, join_by("word1" == "word")) %>%
+  anti_join(early_access_words, join_by("word2" == "word")) %>% 
+  drop_na() %>% 
+  inner_join(get_sentiments("bing"), join_by("word1" == "word")) %>% 
+  inner_join(get_sentiments("bing"), join_by("word2" == "word")) %>% 
+  mutate(total_sentiment = case_when(
+    sentiment.x == "positive" & sentiment.y == "negative" ~ "negative",
+    sentiment.x == "negative" & sentiment.y == "negative" ~ "negative",
+    sentiment.x == "positive" & sentiment.y == "positive" ~ "positive",
+    sentiment.x == "negative" & sentiment.y == "positive" ~ "positive",
+    TRUE ~ "this shouldn't appear"
+  )) %>% 
+  select(-sentiment.x, -sentiment.y) %>% 
+  filter(total_sentiment == "negative") %>% 
+  drop_na() %>% 
+  unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
+  anti_join(game_stop_bigrams_negative)
+```
+```{r}
+write_csv(test_negative_sentiments, "clean_data/negative_reviews_ready_for_clouding.csv")
+```
+
+
+```{r}
+ggwordcloud(words = test_negative_sentiments$bigram, freq = test_negative_sentiments$n, random.color = TRUE, colors =  palette_neg, min.freq = 40)
+
+ggsave("Visualisations/negative_steam_bigrams.png", dpi = 500)
+```
+```{r}
+test_positive_sentiments <- positive_reviews %>% 
+  unnest_tokens(bigram, review_text, token = "ngrams", n = 2) %>% 
+  count(bigram, sort = TRUE) %>%  # count bigrams
+  separate(bigram, into = c("word1", "word2"), sep = " ") %>% # split bigrams into two seperate columns
+  anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
+  anti_join(stop_words, join_by("word2" == "word")) %>% 
+ # anti_join(game_stop_words, join_by("word1" == "word")) %>% 
+ # anti_join(game_stop_words, join_by("word2" == "word")) %>% 
+  anti_join(early_access_words, join_by("word1" == "word")) %>%
+  anti_join(early_access_words, join_by("word2" == "word")) %>% 
+  drop_na() %>% 
+  inner_join(get_sentiments("bing"), join_by("word1" == "word")) %>% 
+  inner_join(get_sentiments("bing"), join_by("word2" == "word")) %>% 
+  mutate(total_sentiment = case_when(
+    sentiment.x == "positive" & sentiment.y == "negative" ~ "negative",
+    sentiment.x == "negative" & sentiment.y == "negative" ~ "negative",
+    sentiment.x == "positive" & sentiment.y == "positive" ~ "positive",
+    sentiment.x == "negative" & sentiment.y == "positive" ~ "positive",
+    TRUE ~ "this shouldn't appear"
+  )) %>% 
+  select(-sentiment.x, -sentiment.y) %>% 
+  filter(total_sentiment == "positive") %>% 
+  drop_na() %>% 
+  unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
+  anti_join(game_stop_bigrams_positive)
+```
+
+```{r}
+ggwordcloud(words = test_positive_sentiments$bigram, freq = test_positive_sentiments$n, random.color = TRUE, colors =  palette_pos, min.freq = 30)
+
+ggsave("Visualisations/postive_steam_bigrams.png", dpi = 500)
+```
+```{r}
+write_csv(test_positive_sentiments, "clean_data/positive_reviews_ready_for_clouding.csv")
+```
+```{r}
+positive_review_words <- positive_reviews %>% 
+  unnest_tokens(output = word, input = review_text) %>% 
+  anti_join(stop_words) %>% 
+  anti_join(game_stop_words) %>% 
+  count(word) %>% 
+  inner_join(get_sentiments("bing")) %>% 
+  arrange(desc(n)) %>% 
+  filter(sentiment == "positive")
+```
+
+```{r}
+ggwordcloud(words = positive_review_words$word, freq = positive_review_words$n, random.color = TRUE, colors =  palette_pos, min.freq = 70)
+
+ggsave("Visualisations/postive_steam_words.png", dpi = 500)
 ```
 
