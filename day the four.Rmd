@@ -20,7 +20,7 @@ steam %>%
   distinct(required_age)
 ```
 
-For the purposes of making a model, what would we want the target to be? If we were to create a column called "successful", what variables would it look for?
+#For the purposes of making a model, what would we want the target to be? If we were to create a column called "successful", what variables would it look for?
 
 ```{r}
 
@@ -220,4 +220,4 @@ ok what if we try some of that tf-idf stuff
 reviews_separated %>% 
   unnest_tokens(input = reviews, output = word)
 ```
-
+``
