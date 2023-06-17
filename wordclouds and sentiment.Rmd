@@ -481,6 +481,6 @@ positive_no_sentiment_tri <- positive_reviews %>%
 ```
 
 ```{r}
-ggwordcloud(words = positive_no_sentiment_tri$trigram, freq = positive_no_sentiment_tri$n, random.color = TRUE, colors =  palette_pos, min.freq = 150)
+ggwordcloud(words = positive_no_sentiment_tri$trigram, freq = positive_no_sentiment_tri$n, random.color = TRUE, colors =  palette_pos, min.freq = 100)
 ```
 well that was a waste of time

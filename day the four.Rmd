@@ -27,12 +27,36 @@ steam %>%
 steam %>%
   separate(col = steamspy_tags, sep = ";", into = c("tag_1", "tag_2", "tag_3")) %>% 
   pivot_longer(cols = c("tag_1", "tag_2", "tag_3"), values_to = "tags", names_to = "drop_me") %>% 
-  drop_na(tags) 
+  drop_na(tags) %>% 
+  group_by(tags) %>% 
+   count(tags) %>% 
+   arrange(desc(n)) 
+
 
 ```
 
 ```{r}
+# creating new logical columns for use in the model - we cant have every genre/tag, so a selection of a few will have to do
+# Preferably ones without a lot of overlap
+# Not including Indie, because anything developed by Dinkey game would be Indie by default - It's a tag that doesnt really describe anything about the game
+steam <- steam %>% 
+  mutate(is_open_world = ifelse(str_detect(steamspy_tags, "Open World"), TRUE, FALSE),
+         is_rogue_like = ifelse(str_detect(steamspy_tags, "Rogue-like"), TRUE, FALSE),
+         is_metroidvania = ifelse(str_detect(steamspy_tags, "Metroidvania"), TRUE, FALSE),
+         is_visual_novel = ifelse(str_detect(steamspy_tags, "Visual Novel"), TRUE, FALSE),
+         has_great_soundtrack = ifelse(str_detect(steamspy_tags, "Great Soundtrack"), TRUE, FALSE),
+         is_shooter =ifelse(str_detect(steamspy_tags, "Shooter") | str_detect(steamspy_tags, "FPS") | str_detect(steamspy_tags, "Third-Person Shooter"), TRUE, FALSE),
+         is_rpg = ifelse(str_detect(steamspy_tags, "RPG"), TRUE, FALSE),
+         has_female_protagonist = ifelse(str_detect(steamspy_tags, "Female Protagonist"), TRUE, FALSE),
+         is_sports = ifelse(str_detect(steamspy_tags, "Sports"), TRUE, FALSE), 
+                                .after = multiplayer) %>% 
+  filter(is_open_world == TRUE)
 
+```
+
+
+```{r}
+write_csv(steam, "clean_data/steam_for_model.csv")
 ```
 
 ____________________________________
