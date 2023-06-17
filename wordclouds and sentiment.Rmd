@@ -2,6 +2,7 @@
 title: "WORDS WORDS WORDS"
 output: html_notebook
 ---
+# This is quite a resource hog - I wouldn't recommend running this all at once
 ```{r}
 library(tidyverse)
 library(tidytext)
@@ -365,7 +366,7 @@ write_csv(test_negative_sentiments, "clean_data/negative_reviews_ready_for_cloud
 ```{r}
 ggwordcloud(words = test_negative_sentiments$bigram, freq = test_negative_sentiments$n, random.color = TRUE, colors =  palette_neg, min.freq = 40)
 
-ggsave("Visualisations/negative_steam_bigrams.png", dpi = 500)
+#ggsave("Visualisations/negative_steam_bigrams.png", dpi = 500)
 ```
 ```{r}
 test_positive_sentiments <- positive_reviews %>% 
@@ -398,7 +399,7 @@ test_positive_sentiments <- positive_reviews %>%
 ```{r}
 ggwordcloud(words = test_positive_sentiments$bigram, freq = test_positive_sentiments$n, random.color = TRUE, colors =  palette_pos, min.freq = 30)
 
-ggsave("Visualisations/postive_steam_bigrams.png", dpi = 500)
+# ggsave("Visualisations/postive_steam_bigrams.png", dpi = 500)
 ```
 ```{r}
 write_csv(test_positive_sentiments, "clean_data/positive_reviews_ready_for_clouding.csv")
@@ -420,3 +421,66 @@ ggwordcloud(words = positive_review_words$word, freq = positive_review_words$n, 
 ggsave("Visualisations/postive_steam_words.png", dpi = 500)
 ```
 
+```{r}
+# testing a version without sentiment, just to show comparisons
+negative_no_sentiment <- negative_reviews %>% 
+  unnest_tokens(bigram, review_text, token = "ngrams", n = 2) %>% 
+  count(bigram, sort = TRUE) %>%  # count bigrams
+  separate(bigram, into = c("word1", "word2"), sep = " ") %>% # split bigrams into two seperate columns
+  anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
+  anti_join(stop_words, join_by("word2" == "word")) %>% 
+ # anti_join(game_stop_words, join_by("word1" == "word")) %>% 
+ # anti_join(game_stop_words, join_by("word2" == "word")) %>% 
+  anti_join(early_access_words, join_by("word1" == "word")) %>%
+  anti_join(early_access_words, join_by("word2" == "word")) %>% 
+  drop_na() %>% 
+  unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) 
+
+```
+
+```{r}
+ggwordcloud(words = negative_no_sentiment$bigram, freq = negative_no_sentiment$n, random.color = TRUE, colors =  palette_neg, min.freq = 50)
+```
+
+```{r}
+positive_no_sentiment <- positive_reviews %>% 
+  unnest_tokens(bigram, review_text, token = "ngrams", n = 2) %>% 
+  count(bigram, sort = TRUE) %>%  # count bigrams
+  separate(bigram, into = c("word1", "word2"), sep = " ") %>% # split bigrams into two seperate columns
+  anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
+  anti_join(stop_words, join_by("word2" == "word")) %>% 
+ # anti_join(game_stop_words, join_by("word1" == "word")) %>% 
+ # anti_join(game_stop_words, join_by("word2" == "word")) %>% 
+  anti_join(early_access_words, join_by("word1" == "word")) %>%
+  anti_join(early_access_words, join_by("word2" == "word")) %>% 
+  drop_na() %>% 
+  unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) 
+```
+
+```{r}
+ggwordcloud(words = positive_no_sentiment$bigram, freq = positive_no_sentiment$n, random.color = TRUE, colors =  palette_pos, min.freq = 1000)
+```
+
+```{r}
+
+positive_no_sentiment_tri <- positive_reviews %>% 
+  unnest_tokens(trigram, review_text, token = "ngrams", n = 3) %>% 
+  count(trigram, sort = TRUE) %>%  # count bigrams
+  separate(trigram, into = c("word1", "word2", "word3"), sep = " ") %>% # split bigrams into two seperate columns
+  anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
+  anti_join(stop_words, join_by("word2" == "word")) %>% 
+  anti_join(stop_words, join_by("word3" == "word")) %>% 
+ # anti_join(game_stop_words, join_by("word1" == "word")) %>% 
+ # anti_join(game_stop_words, join_by("word2" == "word")) %>% 
+  anti_join(early_access_words, join_by("word1" == "word")) %>%
+  anti_join(early_access_words, join_by("word2" == "word")) %>% 
+  anti_join(early_access_words, join_by("word3" == "word")) %>% 
+  drop_na() %>% 
+  unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
+  unite(col = "trigram", bigram:word3, sep = " ", remove = TRUE)
+```
+
+```{r}
+ggwordcloud(words = positive_no_sentiment_tri$trigram, freq = positive_no_sentiment_tri$n, random.color = TRUE, colors =  palette_pos, min.freq = 150)
+```
+well that was a waste of time
