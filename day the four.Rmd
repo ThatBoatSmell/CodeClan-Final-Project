@@ -38,7 +38,7 @@ steam %>%
 ```{r}
 # creating new logical columns for use in the model - we cant have every genre/tag, so a selection of a few will have to do
 # Preferably ones without a lot of overlap
-# Not including Indie, because anything developed by Dinkey game would be Indie by default - It's a tag that doesnt really describe anything about the game
+# Not including Indie just now, because anything developed by Dinkey game would be Indie by default - It's a tag that doesnt really describe anything about the game
 steam <- steam %>% 
   mutate(is_open_world = ifelse(str_detect(steamspy_tags, "Open World"), TRUE, FALSE),
          is_rogue_like = ifelse(str_detect(steamspy_tags, "Rogue-like"), TRUE, FALSE),
@@ -48,9 +48,30 @@ steam <- steam %>%
          is_shooter =ifelse(str_detect(steamspy_tags, "Shooter") | str_detect(steamspy_tags, "FPS") | str_detect(steamspy_tags, "Third-Person Shooter"), TRUE, FALSE),
          is_rpg = ifelse(str_detect(steamspy_tags, "RPG"), TRUE, FALSE),
          has_female_protagonist = ifelse(str_detect(steamspy_tags, "Female Protagonist"), TRUE, FALSE),
-         is_sports = ifelse(str_detect(steamspy_tags, "Sports"), TRUE, FALSE), 
-                                .after = multiplayer) %>% 
-  filter(is_open_world == TRUE)
+         is_sports = ifelse(str_detect(steamspy_tags, "Sports"), TRUE, FALSE),
+         is_simulation = ifelse(str_detect(steamspy_tags, "Simulation"), TRUE, FALSE),
+                                .after = multiplayer) 
+
+```
+```{r}
+steam <- steam %>% 
+  mutate(is_positive = ifelse(str_detect(general_rating, "Positive"), TRUE, FALSE),
+         .after = linux_support)
+```
+For the purpose of my model over in Python land, i'm turning Multiplayer into just a logical to see if it changes anything
+
+```{r}
+steam %>% 
+  distinct(multiplayer)
+```
+
+
+```{r}
+steam <- steam %>% 
+  mutate(multiplayer = ifelse(str_detect(multiplayer, "No multiplayer"), FALSE, TRUE)) 
+```
+```{r}
+#ok im adding indie to see what happens 
 
 ```
 
