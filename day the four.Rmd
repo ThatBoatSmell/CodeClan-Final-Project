@@ -17,7 +17,7 @@ steam
 
 ```{r}
 steam %>% 
-  distinct(required_age)
+  select(name, owners)
 ```
 
 #For the purposes of making a model, what would we want the target to be? If we were to create a column called "successful", what variables would it look for?
@@ -71,13 +71,37 @@ steam <- steam %>%
   mutate(multiplayer = ifelse(str_detect(multiplayer, "No multiplayer"), FALSE, TRUE)) 
 ```
 ```{r}
-#ok im adding indie to see what happens 
+#ok fine im adding indie to see what happens 
+steam <- steam %>% 
+  mutate(is_indie = ifelse(str_detect(steamspy_tags, "Indie"), TRUE, FALSE)) 
+```
+```{r}
+steam %>% 
+  filter(multiplayer == FALSE)
+```
+```{r}
+# what if we bumped up the threshold? What if mostly positive was no longer acceptable?
 
+steam_but_harsher <- steam %>% 
+  mutate(is_positive = case_when(
+    general_rating == "Extremely Positive" | general_rating == "Positive" ~ TRUE,
+    TRUE ~ FALSE
+  )) 
+```
+
+```{r}
+steam_but_harsher %>% 
+  filter(is_positive == TRUE)
+```
+```{r}
+steam %>% 
+  filter(is_positive == TRUE)
 ```
 
 
 ```{r}
 write_csv(steam, "clean_data/steam_for_model.csv")
+write_csv(steam_but_harsher, "clean_data/harsher_steam_for_model.csv")
 ```
 
 ____________________________________

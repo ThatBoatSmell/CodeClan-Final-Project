@@ -397,13 +397,13 @@ sales_2019 %>%
     caption = "From 2019 game sales data"
   ) +
    scale_fill_manual(values = c(
-   "Platformer" = "#04E762",
-    "Action" = "#DC0073",
-    "Sports" = "#008BF8",
+   "Platformer" = "#0B3954",
+    "Action" = "#087E8B",
+    "Sports" = "#BFD7EA",
    # "Misc" = "#f5b700",
     "Shooter" = "#390099",
-    "Adventure" = "#8ac926",
-    "Role-Playing" = "#ff6b35"
+    "Adventure" = "#C81D25",
+    "Role-Playing" = "#5B2333"
    )) +
   theme_light() +
   theme(axis.text.x = element_text(angle = 25, hjust = 0.5, size = 9, face = "bold", vjust = 0.8)) +
@@ -418,6 +418,19 @@ sales_2019 %>%
    
 
 # ggsave("Visualisations/2019_genres_excl_misc.png")      
+```
+
+
+```{r}
+   scale_fill_manual(values = c(
+   "Platformer" = "#04E762",
+    "Action" = "#DC0073",
+    "Sports" = "#008BF8",
+   # "Misc" = "#f5b700",
+    "Shooter" = "#390099",
+    "Adventure" = "#8ac926",
+    "Role-Playing" = "#ff6b35"
+   )) +
 ```
 
 ```{r}
@@ -537,6 +550,40 @@ steam_years %>%
   labs(fill = "Genre")
 
 # ggsave("Visualisations/steam_genres_2009_on.png")
+```
+```{r}
+# Indie isn't really a genre though - what if we filter that out
+steam_years %>% 
+  filter(release_year >= 2009) %>% 
+  group_by(release_year) %>% 
+  count(value) %>% 
+  filter(value != "Indie") %>% 
+  slice_max(n = 3, n) %>% 
+  arrange(desc(n))  %>% 
+  ggplot(aes(x = release_year, y = n, fill = value)) +
+  geom_col(colour = "black") +
+  labs(
+    title = "Most Common Genres Over Time",
+    subtitle = "Shown year by year from 2009 until May 2019",
+    caption = "From 2019 Steam/Steam Spy data"
+  ) +
+   scale_fill_manual(values = c(
+     "Indie" = "#04E762",
+     "Action" = "#DC0073",
+     "Casual" = "#008BF8",
+     "Adventure" = "#f5b700"
+   )) +
+  theme_light() +
+  theme(axis.text.x = element_text(angle = 25, hjust = 0.5, size = 9, face = "bold", vjust = 0.8)) +
+  theme(axis.line = element_line(colour = "black"))+
+  theme(axis.text.y = element_text(size = 9, face = "bold")) +
+  xlab("Interval") +
+  ylab("Number of Games in the genre released") +
+  theme(axis.title.x = element_text(face = "italic", size = 10)) +
+  theme(axis.title.y = element_text(face = "italic", size = 10)) +
+  theme(plot.caption = element_text(size = 7, hjust = 1.25)) +
+  scale_x_continuous(breaks = c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019)) +
+  labs(fill = "Genre")
 ```
 
 

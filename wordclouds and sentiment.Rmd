@@ -304,6 +304,11 @@ Ok now i have a million negative reviews and a million positive reviews
 Lets read them in and see if i break everything
 
 ```{r}
+negative_reviews <- read_csv("raw_data/negative_steam_reviews.csv")
+positive_reviews <- read_csv("raw_data/positive_steam_reviews.csv")
+```
+
+```{r}
 game_stop_bigrams_negative <- negative_reviews %>% 
   select(app_name) %>% 
   unnest_tokens(bigram, app_name, token = "ngrams", n = 2) %>% 
@@ -315,10 +320,7 @@ game_stop_bigrams_positive <- positive_reviews %>%
   drop_na()
 ```
 
-```{r}
-negative_reviews <- read_csv("raw_data/negative_steam_reviews.csv")
-positive_reviews <- read_csv("raw_data/positive_steam_reviews.csv")
-```
+
 
 ```{r}
 # seeing as we now have two separate datasets, we don't really need to keep anything except the reviews
@@ -332,34 +334,40 @@ positive_reviews <- positive_reviews %>%
 ```
 
 ```{r}
-test_negative_sentiments <- negative_reviews %>% 
-  unnest_tokens(bigram, review_text, token = "ngrams", n = 2) %>% 
-  count(bigram, sort = TRUE) %>%  # count bigrams
-  separate(bigram, into = c("word1", "word2"), sep = " ") %>% # split bigrams into two seperate columns
-  anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
-  anti_join(stop_words, join_by("word2" == "word")) %>% 
- # anti_join(game_stop_words, join_by("word1" == "word")) %>% 
- # anti_join(game_stop_words, join_by("word2" == "word")) %>% 
-  anti_join(early_access_words, join_by("word1" == "word")) %>%
-  anti_join(early_access_words, join_by("word2" == "word")) %>% 
-  drop_na() %>% 
-  inner_join(get_sentiments("bing"), join_by("word1" == "word")) %>% 
-  inner_join(get_sentiments("bing"), join_by("word2" == "word")) %>% 
-  mutate(total_sentiment = case_when(
-    sentiment.x == "positive" & sentiment.y == "negative" ~ "negative",
-    sentiment.x == "negative" & sentiment.y == "negative" ~ "negative",
-    sentiment.x == "positive" & sentiment.y == "positive" ~ "positive",
-    sentiment.x == "negative" & sentiment.y == "positive" ~ "positive",
-    TRUE ~ "this shouldn't appear"
-  )) %>% 
-  select(-sentiment.x, -sentiment.y) %>% 
-  filter(total_sentiment == "negative") %>% 
-  drop_na() %>% 
-  unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
-  anti_join(game_stop_bigrams_negative)
+# Saved so we don't have to run this every time
+
+# test_negative_sentiments <- negative_reviews %>% 
+#   unnest_tokens(bigram, review_text, token = "ngrams", n = 2) %>% 
+#   count(bigram, sort = TRUE) %>%  # count bigrams
+#   separate(bigram, into = c("word1", "word2"), sep = " ") %>% # split bigrams into two seperate columns
+#   anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
+#   anti_join(stop_words, join_by("word2" == "word")) %>% 
+#  # anti_join(game_stop_words, join_by("word1" == "word")) %>% 
+#  # anti_join(game_stop_words, join_by("word2" == "word")) %>% 
+#   anti_join(early_access_words, join_by("word1" == "word")) %>%
+#   anti_join(early_access_words, join_by("word2" == "word")) %>% 
+#   drop_na() %>% 
+#   inner_join(get_sentiments("bing"), join_by("word1" == "word")) %>% 
+#   inner_join(get_sentiments("bing"), join_by("word2" == "word")) %>% 
+#   mutate(total_sentiment = case_when(
+#     sentiment.x == "positive" & sentiment.y == "negative" ~ "negative",
+#     sentiment.x == "negative" & sentiment.y == "negative" ~ "negative",
+#     sentiment.x == "positive" & sentiment.y == "positive" ~ "positive",
+#     sentiment.x == "negative" & sentiment.y == "positive" ~ "positive",
+#     TRUE ~ "this shouldn't appear"
+#   )) %>% 
+#   select(-sentiment.x, -sentiment.y) %>% 
+#   filter(total_sentiment == "negative") %>% 
+#   drop_na() %>% 
+#   unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
+#   anti_join(game_stop_bigrams_negative)
 ```
 ```{r}
-write_csv(test_negative_sentiments, "clean_data/negative_reviews_ready_for_clouding.csv")
+# write_csv(test_negative_sentiments, "clean_data/negative_reviews_ready_for_clouding.csv")
+```
+
+```{r}
+test_negative_sentiments <- read_csv("clean_data/negative_reviews_ready_for_clouding.csv")
 ```
 
 
@@ -369,40 +377,47 @@ ggwordcloud(words = test_negative_sentiments$bigram, freq = test_negative_sentim
 #ggsave("Visualisations/negative_steam_bigrams.png", dpi = 500)
 ```
 ```{r}
-test_positive_sentiments <- positive_reviews %>% 
-  unnest_tokens(bigram, review_text, token = "ngrams", n = 2) %>% 
-  count(bigram, sort = TRUE) %>%  # count bigrams
-  separate(bigram, into = c("word1", "word2"), sep = " ") %>% # split bigrams into two seperate columns
-  anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
-  anti_join(stop_words, join_by("word2" == "word")) %>% 
- # anti_join(game_stop_words, join_by("word1" == "word")) %>% 
- # anti_join(game_stop_words, join_by("word2" == "word")) %>% 
-  anti_join(early_access_words, join_by("word1" == "word")) %>%
-  anti_join(early_access_words, join_by("word2" == "word")) %>% 
-  drop_na() %>% 
-  inner_join(get_sentiments("bing"), join_by("word1" == "word")) %>% 
-  inner_join(get_sentiments("bing"), join_by("word2" == "word")) %>% 
-  mutate(total_sentiment = case_when(
-    sentiment.x == "positive" & sentiment.y == "negative" ~ "negative",
-    sentiment.x == "negative" & sentiment.y == "negative" ~ "negative",
-    sentiment.x == "positive" & sentiment.y == "positive" ~ "positive",
-    sentiment.x == "negative" & sentiment.y == "positive" ~ "positive",
-    TRUE ~ "this shouldn't appear"
-  )) %>% 
-  select(-sentiment.x, -sentiment.y) %>% 
-  filter(total_sentiment == "positive") %>% 
-  drop_na() %>% 
-  unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
-  anti_join(game_stop_bigrams_positive)
+# Saved for the same reason
+
+# test_positive_sentiments <- positive_reviews %>% 
+#   unnest_tokens(bigram, review_text, token = "ngrams", n = 2) %>% 
+#   count(bigram, sort = TRUE) %>%  # count bigrams
+#   separate(bigram, into = c("word1", "word2"), sep = " ") %>% # split bigrams into two seperate columns
+#   anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
+#   anti_join(stop_words, join_by("word2" == "word")) %>% 
+#  # anti_join(game_stop_words, join_by("word1" == "word")) %>% 
+#  # anti_join(game_stop_words, join_by("word2" == "word")) %>% 
+#   anti_join(early_access_words, join_by("word1" == "word")) %>%
+#   anti_join(early_access_words, join_by("word2" == "word")) %>% 
+#   drop_na() %>% 
+#   inner_join(get_sentiments("bing"), join_by("word1" == "word")) %>% 
+#   inner_join(get_sentiments("bing"), join_by("word2" == "word")) %>% 
+#   mutate(total_sentiment = case_when(
+#     sentiment.x == "positive" & sentiment.y == "negative" ~ "negative",
+#     sentiment.x == "negative" & sentiment.y == "negative" ~ "negative",
+#     sentiment.x == "positive" & sentiment.y == "positive" ~ "positive",
+#     sentiment.x == "negative" & sentiment.y == "positive" ~ "positive",
+#     TRUE ~ "this shouldn't appear"
+#   )) %>% 
+#   select(-sentiment.x, -sentiment.y) %>% 
+#   filter(total_sentiment == "positive") %>% 
+#   drop_na() %>% 
+#   unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
+#   anti_join(game_stop_bigrams_positive)
 ```
 
 ```{r}
-ggwordcloud(words = test_positive_sentiments$bigram, freq = test_positive_sentiments$n, random.color = TRUE, colors =  palette_pos, min.freq = 30)
+test_positive_sentiments <- read_csv("clean_data/positive_reviews_ready_for_clouding.csv")
+```
+
+
+```{r}
+ggwordcloud(words = test_positive_sentiments$bigram, freq = test_positive_sentiments$n, random.color = TRUE, colors =  palette_pos, min.freq = 50)
 
 # ggsave("Visualisations/postive_steam_bigrams.png", dpi = 500)
 ```
 ```{r}
-write_csv(test_positive_sentiments, "clean_data/positive_reviews_ready_for_clouding.csv")
+# write_csv(test_positive_sentiments, "clean_data/positive_reviews_ready_for_clouding.csv")
 ```
 ```{r}
 positive_review_words <- positive_reviews %>% 
@@ -416,9 +431,9 @@ positive_review_words <- positive_reviews %>%
 ```
 
 ```{r}
-ggwordcloud(words = positive_review_words$word, freq = positive_review_words$n, random.color = TRUE, colors =  palette_pos, min.freq = 70)
+ggwordcloud(words = positive_review_words$word, freq = positive_review_words$n, random.color = TRUE, colors =  palette_pos, min.freq = 90)
 
-ggsave("Visualisations/postive_steam_words.png", dpi = 500)
+# ggsave("Visualisations/postive_steam_words.png", dpi = 500)
 ```
 
 ```{r}
@@ -462,22 +477,22 @@ ggwordcloud(words = positive_no_sentiment$bigram, freq = positive_no_sentiment$n
 ```
 
 ```{r}
-
-positive_no_sentiment_tri <- positive_reviews %>% 
-  unnest_tokens(trigram, review_text, token = "ngrams", n = 3) %>% 
-  count(trigram, sort = TRUE) %>%  # count bigrams
-  separate(trigram, into = c("word1", "word2", "word3"), sep = " ") %>% # split bigrams into two seperate columns
-  anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
-  anti_join(stop_words, join_by("word2" == "word")) %>% 
-  anti_join(stop_words, join_by("word3" == "word")) %>% 
- # anti_join(game_stop_words, join_by("word1" == "word")) %>% 
- # anti_join(game_stop_words, join_by("word2" == "word")) %>% 
-  anti_join(early_access_words, join_by("word1" == "word")) %>%
-  anti_join(early_access_words, join_by("word2" == "word")) %>% 
-  anti_join(early_access_words, join_by("word3" == "word")) %>% 
-  drop_na() %>% 
-  unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
-  unite(col = "trigram", bigram:word3, sep = " ", remove = TRUE)
+# 
+# positive_no_sentiment_tri <- positive_reviews %>% 
+#   unnest_tokens(trigram, review_text, token = "ngrams", n = 3) %>% 
+#   count(trigram, sort = TRUE) %>%  # count bigrams
+#   separate(trigram, into = c("word1", "word2", "word3"), sep = " ") %>% # split bigrams into two seperate columns
+#   anti_join(stop_words, join_by("word1" == "word")) %>%  # check if word1 of bigram is a stop word
+#   anti_join(stop_words, join_by("word2" == "word")) %>% 
+#   anti_join(stop_words, join_by("word3" == "word")) %>% 
+#  # anti_join(game_stop_words, join_by("word1" == "word")) %>% 
+#  # anti_join(game_stop_words, join_by("word2" == "word")) %>% 
+#   anti_join(early_access_words, join_by("word1" == "word")) %>%
+#   anti_join(early_access_words, join_by("word2" == "word")) %>% 
+#   anti_join(early_access_words, join_by("word3" == "word")) %>% 
+#   drop_na() %>% 
+#   unite(col = "bigram", word1:word2, sep = " ", remove = TRUE) %>% 
+#   unite(col = "trigram", bigram:word3, sep = " ", remove = TRUE)
 ```
 
 ```{r}
