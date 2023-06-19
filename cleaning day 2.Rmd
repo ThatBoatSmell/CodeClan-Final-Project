@@ -27,7 +27,7 @@ games_raw <- read_csv("raw_data/Raw Data GVGS&R.csv")
 
 ```{r}
 games_raw %>% 
-  filter(Name == "Minecraft")
+  distinct(Genre)
 ```
 Why does everyone have the same dataset
 
