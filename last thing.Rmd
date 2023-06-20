@@ -22,3 +22,19 @@ last_model_adjust <- last_model_adjust %>%
 write_csv(last_model_adjust, "clean_data/steam_for_model_w_action_adventure.csv")
 ```
 
+```{r}
+last_model_adjust %>% 
+  mutate(is_positive = ifelse(str_detect(general_rating, "Positive"), TRUE , FALSE)) %>% 
+  group_by(is_positive) %>% 
+  select(positive_ratings, negative_ratings, total_reviews) %>% 
+  summarise(sum(positive_ratings))
+```
+```{r}
+last_model_adjust %>% 
+  mutate(is_positive = ifelse(str_detect(general_rating, "Positive"), TRUE , FALSE)) %>% 
+  group_by(is_positive) %>% 
+  select(positive_ratings, negative_ratings, total_reviews) %>% 
+  summarise(sum(negative_ratings))
+```
+
+

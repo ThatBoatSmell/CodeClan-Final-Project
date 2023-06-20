@@ -422,15 +422,7 @@ sales_2019 %>%
 
 
 ```{r}
-   scale_fill_manual(values = c(
-   "Platformer" = "#04E762",
-    "Action" = "#DC0073",
-    "Sports" = "#008BF8",
-   # "Misc" = "#f5b700",
-    "Shooter" = "#390099",
-    "Adventure" = "#8ac926",
-    "Role-Playing" = "#ff6b35"
-   )) +
+
 ```
 
 ```{r}
@@ -552,6 +544,8 @@ steam_years %>%
 # ggsave("Visualisations/steam_genres_2009_on.png")
 ```
 ```{r}
+
+
 # Indie isn't really a genre though - what if we filter that out
 steam_years %>% 
   filter(release_year >= 2009) %>% 
@@ -563,12 +557,12 @@ steam_years %>%
   ggplot(aes(x = release_year, y = n, fill = value)) +
   geom_col(colour = "black") +
   labs(
-    title = "Most Common Genres Over Time",
+    title = "Most Common Genres Over Time - Excluding Indie",
     subtitle = "Shown year by year from 2009 until May 2019",
     caption = "From 2019 Steam/Steam Spy data"
   ) +
    scale_fill_manual(values = c(
-     "Indie" = "#04E762",
+     "Strategy" = "#ACE1AF",
      "Action" = "#DC0073",
      "Casual" = "#008BF8",
      "Adventure" = "#f5b700"
@@ -584,6 +578,8 @@ steam_years %>%
   theme(plot.caption = element_text(size = 7, hjust = 1.25)) +
   scale_x_continuous(breaks = c(2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019)) +
   labs(fill = "Genre")
+
+#ggsave("Visualisations/steam_genres_2009_on_ex_indie.png")
 ```
 
 
