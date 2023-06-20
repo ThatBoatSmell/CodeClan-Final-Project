@@ -1,0 +1,24 @@
+---
+title: "One last thing"
+output: html_notebook
+---
+
+```{r}
+library(tidyverse)
+```
+
+```{r}
+last_model_adjust <- read_csv("clean_data/harsher_steam_for_model.csv")
+```
+
+```{r}
+last_model_adjust <- last_model_adjust %>% 
+  mutate(is_action = ifelse(str_detect(genres, "Action"), TRUE, FALSE),
+         is_adventure = ifelse(str_detect(genres, "Adventure"), TRUE, FALSE),
+         is_casual = ifelse(str_detect(genres, "Casual"), TRUE, FALSE),.after = is_simulation)
+```
+
+```{r}
+write_csv(last_model_adjust, "clean_data/steam_for_model_w_action_adventure.csv")
+```
+
